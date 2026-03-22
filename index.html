@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flores Amarillas 🌻</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Lato:wght@300;400;700&display=swap');
+
+    :root {
+      --cream: #fff8ed;
+      --brown: #6B3A2A;
+      --gold:  #FFD700;
+      --amber: #FFC107;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #0d0012;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 16px 80px;
+      font-family: 'Lato', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── PARTÍCULAS ── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── CARTA ── */
+    .card {
+      position: relative;
+      width: 92%;
+      max-width: 420px;
+      background: var(--cream);
+      border-radius: 20px;
+      padding: 26px 26px 26px 26px;
+      box-shadow: 0 12px 50px rgba(0,0,0,0.55);
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    /* ── ÁRBOL (canvas dentro de la carta) ── */
+    #tree-canvas {
+      position: absolute;
+      top: 0; right: 0;
+      width: 190px;
+      height: 210px;
+      pointer-events: none;
+    }
+
+    /* ── TEXTO ── */
+    .letter-wrap {
+      position: relative;
+      z-index: 2;
+      max-width: 58%;
+    }
+
+    .letter-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #5a3e1b;
+      line-height: 1.35;
+      margin-bottom: 16px;
+    }
+
+    .letter-body {
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.05rem;
+      color: #3d2b0f;
+      line-height: 1.8;
+    }
+
+    .letter-body p { margin-bottom: 10px; }
+
+    .letter-sign {
+      margin-top: 16px;
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.15rem;
+      color: #7a4e1c;
+      font-weight: 700;
+    }
+
+    /* ── CONTADOR ── */
+    .counter-wrap {
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 1.5px solid rgba(160,110,40,0.3);
+      text-align: center;
+    }
+
+    .counter-label {
+      font-size: 0.78rem;
+      font-style: italic;
+      color: #8a6030;
+      margin-bottom: 8px;
+    }
+
+    .counter-row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .c-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 46px;
+    }
+
+    .c-num {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #c47a00;
+      font-family: 'Lato', sans-serif;
+      line-height: 1;
+    }
+
+    .c-lbl {
+      font-size: 0.6rem;
+      color: #8a6030;
+      letter-spacing: .04em;
+    }
+
+    .c-sep {
+      font-size: 1.5rem;
+      color: #c47a00;
+      line-height: 1;
+      padding-top: 4px;
+      font-weight: 700;
+    }
+
+    /* ── REPRODUCTOR ── */
+    .player-card {
+      position: relative;
+      z-index: 10;
+      width: 92%;
+      max-width: 420px;
+      margin-top: 20px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,220,100,0.2);
+      border-radius: 16px;
+      padding: 14px 18px 16px;
+      backdrop-filter: blur(6px);
+    }
+
+    .player-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 1rem;
+      color: #ffe0a0;
+      margin-bottom: 10px;
+      text-align: center;
+      letter-spacing: .02em;
+    }
+
+    .player-title span { color: #FFD700; }
+
+    .yt-wrap {
+      border-radius: 10px;
+      overflow: hidden;
+      line-height: 0;
+    }
+
+    .yt-wrap iframe {
+      width: 100%;
+      height: 80px;
+      border: none;
+      border-radius: 10px;
+    }
+
+    /* ── FLORES FLOTANTES ── */
+    .petal {
+      position: fixed;
+      font-size: 1.1rem;
+      pointer-events: none;
+      z-index: 5;
+      animation: fallPetal linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes fallPetal {
+      0%   { transform: translateY(-40px) rotate(0deg);  opacity: 0; }
+      10%  { opacity: .9; }
+      90%  { opacity: .7; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- FLORES CAYENDO -->
+<div id="petals-container"></div>
+
+<!-- CARTA -->
+<div class="card">
+  <canvas id="tree-canvas" width="190" height="210"></canvas>
+
+  <div class="letter-wrap">
+    <div class="letter-title">🌻 Flores Amarillas<br>para el amor<br>de mi vida:</div>
+    <div class="letter-body">
+      <p>Si pudiera elegir<br>un lugar seguro,<br>sería a tu lado.</p>
+      <p>Cuanto más tiempo<br>estoy contigo<br>más te amo.</p>
+    </div>
+    <div class="letter-sign">— I Love You! 🌻</div>
+  </div>
+
+  <div class="counter-wrap">
+    <div class="counter-label">Mi amor por ti comenzó hace...</div>
+    <div class="counter-row">
+      <div class="c-unit">
+        <span class="c-num" id="days">00</span>
+        <span class="c-lbl">días</span>
+      </div>
+      <div class="c-sep"></div>
+      <div class="c-unit">
+        <span class="c-num" id="hours">00</span>
+        <span class="c-lbl">horas</span>
+      </div>
+      <div class="c-sep"></div>
+      <div class="c-unit">
+        <span class="c-num" id="minutes">00</span>
+        <span class="c-lbl">minutos</span>
+      </div>
+      <div class="c-sep"></div>
+      <div class="c-unit">
+        <span class="c-num" id="seconds">00</span>
+        <span class="c-lbl">segundos</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPRODUCTOR -->
+<div class="player-card">
+  <div class="player-title">🎵 <span>Te Amo y Más</span> — El Libro de la Vida</div>
+  <div class="yt-wrap">
+    <iframe
+      src="https://www.youtube.com/embed/p_1Osm5xE5Y?autoplay=1&loop=1&playlist=p_1Osm5xE5Y&controls=1&rel=0&modestbranding=1"
+      allow="autoplay; encrypted-media"
+      allowfullscreen>
+    </iframe>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   1. ÁRBOL CORAZÓN (Canvas 2D con curva matemática)
+════════════════════════════════════════════ */
+(function(){
+  const c   = document.getElementById('tree-canvas');
+  const ctx = c.getContext('2d');
+  const W   = c.width, H = c.height;
+
+  // ── Posición del tronco ──
+  const TRUNK_X  = W * 0.52;
+  const TRUNK_Y1 = H * 0.62;   // base del corazón
+  const TRUNK_Y2 = H * 0.98;   // base del tronco
+  const TRUNK_W  = 13;
+
+  // ── Centro y escala del corazón ──
+  const HX = W * 0.50;         // centro horizontal
+  const HY = H * 0.38;         // centro vertical del corazón
+  const HS = 58;                // escala
+
+  /* Curva cardioide paramétrica: x = 16sin³t, y = -(13cos-5cos2t-2cos3t-cos4t) */
+  function heartPoint(t) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
+    return { x: HX + x * (HS/16), y: HY + y * (HS/13) };
+  }
+
+  // Genera puntos en la curva del corazón
+  function heartPoints(n) {
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      pts.push(heartPoint((i / n) * Math.PI * 2));
+    }
+    return pts;
+  }
+
+  // Genera puntos dentro del corazón (relleno)
+  function heartFill(density) {
+    const pts = [];
+    for (let attempt = 0; attempt < density * 60; attempt++) {
+      const t = Math.random() * Math.PI * 2;
+      const r = Math.random();
+      const p = heartPoint(t);
+      const cx = HX + (p.x - HX) * r;
+      const cy = HY + (p.y - HY) * r;
+      if (isInsideHeart(cx, cy)) pts.push({ x: cx, y: cy });
+    }
+    return pts;
+  }
+
+  function isInsideHeart(px, py) {
+    // Verifica si un punto está dentro del corazón
+    const nx = (px - HX) / (HS);
+    const ny = (py - HY) / (HS);
+    const v  = Math.pow(nx*nx + ny*ny - 1, 3) - nx*nx * ny*ny*ny;
+    return v <= 0;
+  }
+
+  // ── Datos de flores ──
+  const flowers = [];
+
+  // Flores en el borde del corazón
+  const border = heartPoints(28);
+  border.forEach(p => flowers.push({ x: p.x, y: p.y, r: 6.5, phase: Math.random()*Math.PI*2 }));
+
+  // Flores de relleno
+  const fill = heartFill(42);
+  fill.forEach(p => flowers.push({ x: p.x, y: p.y, r: 5.5 + Math.random()*2, phase: Math.random()*Math.PI*2 }));
+
+  // ── Dibuja una flor de girasol ──
+  function drawFlower(ctx, x, y, r, angle) {
+    const PETALS = 8;
+    // Pétalos
+    for (let i = 0; i < PETALS; i++) {
+      const a = angle + (i / PETALS) * Math.PI * 2;
+      const px = x + Math.cos(a) * r * 1.15;
+      const py = y + Math.sin(a) * r * 1.15;
+      ctx.beginPath();
+      ctx.ellipse(px, py, r * 0.55, r * 0.38, a, 0, Math.PI * 2);
+      const pcolor = (i % 2 === 0) ? '#FFD700' : '#FFC107';
+      ctx.fillStyle = pcolor;
+      ctx.fill();
+    }
+    // Centro oscuro
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.42, 0, Math.PI * 2);
+    ctx.fillStyle = '#5a2d0c';
+    ctx.fill();
+    // Brillo centro
+    ctx.beginPath();
+    ctx.arc(x - r*0.1, y - r*0.1, r * 0.15, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,220,80,0.45)';
+    ctx.fill();
+  }
+
+  // ── Dibuja el tronco ──
+  function drawTrunk() {
+    // Tronco principal
+    const g = ctx.createLinearGradient(TRUNK_X - TRUNK_W, 0, TRUNK_X + TRUNK_W, 0);
+    g.addColorStop(0,   '#4a2510');
+    g.addColorStop(0.4, '#8B5A2B');
+    g.addColorStop(1,   '#3a1a08');
+    ctx.beginPath();
+    ctx.moveTo(TRUNK_X - TRUNK_W/2, TRUNK_Y1);
+    ctx.bezierCurveTo(
+      TRUNK_X - TRUNK_W*0.8, (TRUNK_Y1+TRUNK_Y2)/2,
+      TRUNK_X - TRUNK_W*0.5, (TRUNK_Y1+TRUNK_Y2)/2 + 10,
+      TRUNK_X - TRUNK_W/2, TRUNK_Y2
+    );
+    ctx.lineTo(TRUNK_X + TRUNK_W/2, TRUNK_Y2);
+    ctx.bezierCurveTo(
+      TRUNK_X + TRUNK_W*0.5, (TRUNK_Y1+TRUNK_Y2)/2 + 10,
+      TRUNK_X + TRUNK_W*0.8, (TRUNK_Y1+TRUNK_Y2)/2,
+      TRUNK_X + TRUNK_W/2, TRUNK_Y1
+    );
+    ctx.closePath();
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // Rama izquierda
+    ctx.beginPath();
+    ctx.moveTo(TRUNK_X - 3, TRUNK_Y1 + 18);
+    ctx.quadraticCurveTo(TRUNK_X - 30, TRUNK_Y1 - 5, TRUNK_X - 24, TRUNK_Y1 - 22);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#6B3A2A';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Rama derecha
+    ctx.beginPath();
+    ctx.moveTo(TRUNK_X + 3, TRUNK_Y1 + 18);
+    ctx.quadraticCurveTo(TRUNK_X + 30, TRUNK_Y1 - 5, TRUNK_X + 24, TRUNK_Y1 - 22);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#6B3A2A';
+    ctx.stroke();
+  }
+
+  let t0 = null;
+
+  function draw(ts) {
+    if (!t0) t0 = ts;
+    const elapsed = (ts - t0) / 1000;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Sombra suave del árbol
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.ellipse(TRUNK_X + 2, TRUNK_Y2 - 2, 22, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    drawTrunk();
+
+    // Flores (con animación de oscilación suave)
+    flowers.forEach((fl, i) => {
+      const wave  = Math.sin(elapsed * 1.2 + fl.phase) * 0.9;
+      const scale = 1 + Math.sin(elapsed * 0.8 + fl.phase * 1.5) * 0.05;
+      const angle = wave * 0.06 + (i * 0.37);
+      ctx.save();
+      ctx.translate(fl.x + wave * 0.4, fl.y + Math.cos(elapsed * 0.9 + fl.phase) * 0.4);
+      ctx.scale(scale, scale);
+      drawFlower(ctx, 0, 0, fl.r, angle);
+      ctx.restore();
+    });
+
+    // Pequeñas chispas/pétalos flotando
+    ctx.save();
+    ctx.globalAlpha = 0.5 + 0.3 * Math.sin(elapsed * 2);
+    ctx.fillStyle = '#FFE066';
+    const sx = HX - 52 + Math.sin(elapsed * 1.1) * 6;
+    const sy = HY + 28 + Math.cos(elapsed * 0.9) * 5;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 0.4 + 0.3 * Math.sin(elapsed * 1.7 + 1);
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(HX + 48 + Math.cos(elapsed*1.3)*5, HY + 20 + Math.sin(elapsed)*4, 2.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+})();
+
+
+/* ════════════════════════════════════════════
+   2. CONTADOR ← CAMBIA LA FECHA AQUÍ 💛
+════════════════════════════════════════════ */
+const START = new Date('2026-01-16T00:00:00');
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function tick() {
+  const diff = Math.floor((Date.now() - START) / 1000);
+  if (diff < 0) return;
+  document.getElementById('days').textContent    = pad(Math.floor(diff / 86400));
+  document.getElementById('hours').textContent   = pad(Math.floor((diff % 86400) / 3600));
+  document.getElementById('minutes').textContent = pad(Math.floor((diff % 3600) / 60));
+  document.getElementById('seconds').textContent = pad(diff % 60);
+}
+tick();
+setInterval(tick, 1000);
+
+
+/* ════════════════════════════════════════════
+   3. PARTÍCULAS BOKEH (fondo)
+════════════════════════════════════════════ */
+(function(){
+  const c   = document.getElementById('bg-canvas');
+  const ctx = c.getContext('2d');
+
+  function resize() { c.width = innerWidth; c.height = innerHeight; }
+  resize();
+  addEventListener('resize', resize);
+
+  const COLS = ['rgba(255,0,180,','rgba(220,0,255,','rgba(255,80,210,','rgba(160,0,255,','rgba(255,30,160,'];
+
+  class B {
+    constructor() { this.reset(true); }
+    reset(init) {
+      this.x = Math.random() * c.width;
+      this.y = init ? Math.random() * c.height : c.height + 20;
+      this.r = 6 + Math.random() * 28;
+      this.a = 0.05 + Math.random() * 0.28;
+      this.vy = 0.15 + Math.random() * 0.35;
+      this.vx = (Math.random()-.5) * 0.25;
+      this.col = COLS[Math.floor(Math.random()*COLS.length)];
+      this.ph  = Math.random() * Math.PI * 2;
+    }
+    step(t) {
+      this.y -= this.vy;
+      this.x += Math.sin(t*.001 + this.ph) * this.vx;
+      if (this.y + this.r < 0) this.reset(false);
+    }
+    draw() {
+      const g = ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r);
+      g.addColorStop(0,   this.col + this.a.toFixed(2)+')');
+      g.addColorStop(.55, this.col + (this.a*.35).toFixed(2)+')');
+      g.addColorStop(1,   this.col + '0)');
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.fill();
+    }
+  }
+
+  const balls = Array.from({length:75}, () => new B());
+
+  function loop(t) {
+    ctx.clearRect(0,0,c.width,c.height);
+    balls.forEach(b => { b.step(t); b.draw(); });
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+
+
+/* ════════════════════════════════════════════
+   4. FLORES CAYENDO (decoración)
+════════════════════════════════════════════ */
+(function(){
+  const EMOJIS = ['🌻','✨','🌼','💛','⭐'];
+  const N = 12;
+  const container = document.getElementById('petals-container');
+
+  for (let i = 0; i < N; i++) {
+    const el = document.createElement('div');
+    el.className = 'petal';
+    el.textContent = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+    const dur  = 7 + Math.random() * 9;
+    const delay = Math.random() * 10;
+    el.style.cssText = `
+      left: ${Math.random()*100}vw;
+      animation-duration: ${dur}s;
+      animation-delay: -${delay}s;
+      font-size: ${0.8 + Math.random() * 0.8}rem;
+    `;
+    container.appendChild(el);
+  }
+})();
+</script>
+</body>
+  </html>
